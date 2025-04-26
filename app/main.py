@@ -1,8 +1,8 @@
 from flask import Flask
 from flask_restx import Api, Resource, fields
-from pydantic import BaseModel
 from hccinfhir.model_calculate import calculate_raf
 from app.auth import require_auth
+from app.utils import format_response
 
 app = Flask(__name__)
 
@@ -37,38 +37,59 @@ raf_model = api.model(
             ],
             description="Patient sex: M || 1 || F || 2",
         ),
+        "dual_elgbl_cd": fields.String(
+            default="02",
+            enum=[
+                "00",
+                "01",
+                "02",
+                "03",
+                "04",
+                "05",
+                "06",
+                "07",
+                "08",
+                "09",
+                "10",
+                "",
+            ],
+            description="Dual eligibility code for this month: 01 - 10. Default is 02 which is a 'full dual' code, this code can be retrieved from service level data in the FHIR resource EOB. \n\nDual codes: https://resdac.org/cms-data/variables/medicare-medicaid-dual-eligibility-code-january \n\nFHIR EOB: https://build.fhir.org/explanationofbenefit.html",
+        ),
+        "orec": fields.String(
+            default="0",
+            enum=[
+                "0",
+                "1",
+                "2",
+                "3",
+            ],
+            description="Original reason for entitlement code: 0 - 3. Default is 0 which is 'age'. \n\nOREC codes: https://resdac.org/cms-data/variables/medicare-original-reason-entitlement-code-orec",
+        ),
+        "crec": fields.String(
+            default="0",
+            enum=[
+                "0",
+                "1",
+                "2",
+                "3",
+                "4",
+            ],
+            description="Current reason for entitlement code: 0 - 4. Default is 0 which is 'age'. \n\nCREC codes: https://resdac.org/cms-data/variables/current-reason-entitlement-code",
+        ),
+        "new_enrollee": fields.Boolean(
+            default=False,
+            description="Whether the patient is a new enrollee. Default is False.",
+        ),
+        "snp": fields.Boolean(
+            default=False,
+            description="Whether the patient is in a Special Needs Plan. Default is False.",
+        ),
         "model_name": fields.String(
             default="CMS-HCC Model V28",
             description='Model name, default is "CMS-HCC Model V28". CMS defines annual updates to the model and will eventually deprecate this version.',
         ),
     },
 )
-
-
-def sanitize_for_JSON(d):
-    """Utility function: Recursively convert all sets in a dict to lists and process BaseModel objects as dict."""
-    if issubclass(type(d), dict):
-        return {
-            k: sanitize_for_JSON(v) for k, v in d.items()
-        }  # Recursively clean dicts
-    elif isinstance(d, BaseModel):
-        return {
-            k: sanitize_for_JSON(v) for k, v in d.model_dump().items()
-        }  # Convert Pydantic model to dict
-    elif issubclass(type(d), set):
-        return list(d)
-    else:
-        return d
-
-
-def only_required_fields(raf_response):
-    """Utility function: Strip out unnecessary fields from the calculate_raf() output."""
-    raf_response = sanitize_for_JSON(raf_response)
-    return {
-        "risk_score": raf_response["risk_score"],
-        "coefficients": raf_response["coefficients"],
-    }
-
 
 # Defining calculate-raf route with POST method
 @api.route("/calculate-raf")
@@ -79,15 +100,20 @@ class CalculateRAF(Resource):
         """Calculate RAF using the provided diagnosis codes, age, sex, and optional model name."""
         data = api.payload
         try:
-            result = only_required_fields(
+            response = format_response(
                 calculate_raf(
                     diagnosis_codes=data["diagnosis_codes"],
-                    model_name="CMS-HCC Model V28",
+                    model_name=data.get("model_name"),
                     age=data["age"],
                     sex=data["sex"],
+                    dual_elgbl_cd=data.get("dual_elgbl_cd"),
+                    orec=data.get("orec"),
+                    crec=data.get("crec"),
+                    new_enrollee=data.get("new_enrollee"),
+                    snp=data.get("snp"),
                 )
             )
-            return result, 200
+            return response, 200
         except Exception as e:
             return {"error": str(e)}, 400
 
