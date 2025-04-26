@@ -2,7 +2,7 @@ from flask import Flask
 from flask_restx import Api, Resource, fields
 from pydantic import BaseModel
 from hccinfhir.model_calculate import calculate_raf
-from auth import require_auth
+from app.auth import require_auth
 
 app = Flask(__name__)
 
