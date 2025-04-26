@@ -1,17 +1,57 @@
-from flask import Flask, request, jsonify
+from flask import Flask
+from flask_restx import Api, Resource, fields
 from pydantic import BaseModel
 from hccinfhir.model_calculate import calculate_raf
 
 app = Flask(__name__)
 
+# Initialize Flask-RESTPlus API
+api = Api(
+    app,
+    version="1.0",
+    title="RAF Calculation API",
+    description="API for calculating RAF using CMS-HCC Model V28",
+)
 
-def clean_dict(d):
-    """Recursively convert all sets in a dictionary to lists."""
+# Defining request schema
+raf_model = api.model(
+    "RAFRequest",
+    {
+        "diagnosis_codes": fields.List(
+            fields.String,
+            required=True,
+            description="List of ICD-10-CM diagnosis codes with or without the decimal point.",
+        ),
+        "age": fields.Integer(
+            required=True, min=1, description="Patient age as a non-negative integer."
+        ),
+        "sex": fields.String(
+            required=True,
+            enum=[
+                "M",
+                "F",
+                "1",
+                "2",
+            ],
+            description='Patient sex, "F" or "M"',
+        ),
+        "model_name": fields.String(
+            default="CMS-HCC Model V28",
+            description='Model name, default is "CMS-HCC Model V28". CMS defines annual updates to the model and will eventually deprecate this version.',
+        ),
+    },
+)
+
+
+def sanitize_for_JSON(d):
+    """Utility function: Recursively convert all sets in a dictionary to lists and process BaseModel objects as dict."""
     if issubclass(type(d), dict):
-        return {k: clean_dict(v) for k, v in d.items()}  # Recursively clean dicts
+        return {
+            k: sanitize_for_JSON(v) for k, v in d.items()
+        }  # Recursively clean dicts
     elif isinstance(d, BaseModel):
         return {
-            k: clean_dict(v) for k, v in d.model_dump().items()
+            k: sanitize_for_JSON(v) for k, v in d.model_dump().items()
         }  # Convert Pydantic model to dict
     elif issubclass(type(d), set):
         return list(d)
@@ -19,38 +59,25 @@ def clean_dict(d):
         return d
 
 
-@app.route("/calculate-raf-v28", methods=["POST"])
-def calculate():
-    data = request.json
-    try:
-        result = clean_dict(
-            calculate_raf(
-                diagnosis_codes=data["diagnosis_codes"],
-                model_name="CMS-HCC Model V28",
-                age=data["age"],
-                sex=data["sex"],
+# Defining calculate-raf route with POST method
+@api.route("/calculate-raf")
+class CalculateRAF(Resource):
+    @api.expect(raf_model)
+    def post(self):
+        """Calculate RAF using the provided diagnosis codes, age, sex, and optional model name."""
+        data = api.payload
+        try:
+            result = sanitize_for_JSON(
+                calculate_raf(
+                    diagnosis_codes=data["diagnosis_codes"],
+                    model_name="CMS-HCC Model V28",
+                    age=data["age"],
+                    sex=data["sex"],
+                )
             )
-        )
-
-        # Debugging output: jsonify can't serialize the result directly even though it's a dict
-        # so we need to determine which value in the result is coming up as a 'set', including inside nested dicts
-        print(type(result))
-        # result.pop("demographics", None)  # Remove demographics if present
-        # cleaned_result = {}
-
-        # for key, value in result.items():
-        #     if isinstance(value, set):
-        #         cleaned_result[key] = list(value)  # Convert set to list
-        #     else:
-        #         cleaned_result[key] = value
-        # for key, value in result.items():
-        #     print(f"{key}: {type(value)}")
-
-        # response =
-
-        return jsonify(result), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
+            return result, 200
+        except Exception as e:
+            return {"error": str(e)}, 400
 
 
 if __name__ == "__main__":
