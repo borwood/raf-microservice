@@ -2,6 +2,7 @@ from flask import Flask
 from flask_restx import Api, Resource, fields
 from pydantic import BaseModel
 from hccinfhir.model_calculate import calculate_raf
+from auth import require_auth
 
 app = Flask(__name__)
 
@@ -33,7 +34,7 @@ raf_model = api.model(
                 "1",
                 "2",
             ],
-            description='Patient sex, "F" or "M"',
+            description="Patient sex: M || 1 || F || 2",
         ),
         "model_name": fields.String(
             default="CMS-HCC Model V28",
@@ -63,6 +64,7 @@ def sanitize_for_JSON(d):
 @api.route("/calculate-raf")
 class CalculateRAF(Resource):
     @api.expect(raf_model)
+    @require_auth
     def post(self):
         """Calculate RAF using the provided diagnosis codes, age, sex, and optional model name."""
         data = api.payload
