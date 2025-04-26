@@ -2,6 +2,7 @@
 A flask server wrapping github.com/mimilabs/hccinfhir, a python lib for calculating patient risk adjustment according to the CMS HCC model. This server provides API endpoints for common functionalities and basically serves as a calculator microservice.
 
 Flask-RESTPlus is used for input validation and documentation. The base URL will show the Swagger UI for easy view of routes and expected request schemas.
+![image](https://github.com/user-attachments/assets/d9331810-84e2-4714-b822-b72de72899dd)
 
 ## Routes
 ### /calculate-raf   `POST`

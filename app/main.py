@@ -21,6 +21,7 @@ raf_model = api.model(
         "diagnosis_codes": fields.List(
             fields.String,
             required=True,
+            example=["E119", "I10", "E11.9"],
             description="List of ICD-10-CM diagnosis codes with or without the decimal point.",
         ),
         "age": fields.Integer(
@@ -45,7 +46,7 @@ raf_model = api.model(
 
 
 def sanitize_for_JSON(d):
-    """Utility function: Recursively convert all sets in a dictionary to lists and process BaseModel objects as dict."""
+    """Utility function: Recursively convert all sets in a dict to lists and process BaseModel objects as dict."""
     if issubclass(type(d), dict):
         return {
             k: sanitize_for_JSON(v) for k, v in d.items()
@@ -59,6 +60,14 @@ def sanitize_for_JSON(d):
     else:
         return d
 
+def only_required_fields(raf_response):
+    """Utility function: Strip out unnecessary fields from the calculate_raf() output."""
+    raf_response = sanitize_for_JSON(raf_response)
+    return {
+        "risk_score": raf_response["risk_score"],
+        "coefficients": raf_response["coefficients"],
+    }
+
 
 # Defining calculate-raf route with POST method
 @api.route("/calculate-raf")
@@ -69,7 +78,7 @@ class CalculateRAF(Resource):
         """Calculate RAF using the provided diagnosis codes, age, sex, and optional model name."""
         data = api.payload
         try:
-            result = sanitize_for_JSON(
+            result = only_required_fields(
                 calculate_raf(
                     diagnosis_codes=data["diagnosis_codes"],
                     model_name="CMS-HCC Model V28",
