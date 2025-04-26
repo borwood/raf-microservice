@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
-# This file contains utilities for clearning up the output of calculate_raf() so it can be returned as a useful JSON response.
+# This file contains utilities for cleaning up the output of calculate_raf() so it can be returned as a useful JSON response.
 
-# This is a map of all of the possible coefficient keys that can be returned from the calculate_raf() function.
+# This is a map of all of the possible coefficient keys that can be returned from the calculate_raf() function for CMS HCC V28.
 # It is used to map the keys to human readable labels for the API response.
 coefficient_labels = {
     "interactions": {
@@ -53,7 +53,7 @@ coefficient_labels = {
         "81": "Ulcerative Colitis",
         "92": "Bone/Joint/Muscle/Severe Soft Tissue Infections/Necrosis",
         "93": "Rheumatoid Arthritis and Other Specified Inflammatory Rheumatic Disorders",
-        "94": "Systemic Lupus Erythematosus and Other Specified Systemic ConnecƟve Tissue Disorders",
+        "94": "Systemic Lupus Erythematosus and Other Specified Systemic Connective Tissue Disorders",
         "107": "Sickle Cell Anemia (Hb-SS) and Thalassemia Beta Zero",
         "108": "Sickle Cell Anemia (Hb-SS) and Thalassemia Beta Zero; Beta Thalassemia Major",
         "109": "Acquired HemolyƟc, Aplastic, and Sideroblastic Anemias",
@@ -166,7 +166,7 @@ coefficient_labels = {
 }
 
 
-def sanitize_for_JSON(d):
+def sanitize_for_JSON(d: dict) -> dict:
     """Utility function: Recursively convert all sets in a dict to lists and process BaseModel objects as dict."""
     if issubclass(type(d), dict):
         return {
@@ -185,27 +185,33 @@ def sanitize_for_JSON(d):
 def make_coefficient_breakdown(
     interactions: dict, coefficients: dict, hcc_list: list
 ) -> dict:
-    """Utility function: Make dict of labeled interaction, hcc, and demographic coefficients which together sum to the risk score"""
-    coefficient_breakdown = {"interactions": {}, "hcc": {}, "demographics": {}}
+    """Utility function: Make dict of coefficients separated by type, with human readable labels."""
+    coefficient_breakdown = {"interactions": [], "hcc": [], "demographics": []}
     key_list = []
     # For each interaction that is flagged as present (1), add it to the coefficient breakdown dict
     for key, value in interactions.items():
         if value == 1:
             if key in coefficients:
-                coefficient_breakdown["interactions"][key] = {
-                    "label": coefficient_labels["interactions"].get(
-                        key, "Unidentified Interaction"
-                    ),
-                    "coefficient": coefficients[key],
-                }
+                coefficient_breakdown["interactions"].append(
+                    {
+                        "code": key,
+                        "label": coefficient_labels["interactions"].get(
+                            key, "Unidentified Interaction"
+                        ),
+                        "coefficient": coefficients[key],
+                    }
+                )
                 key_list.append(key)
     # Now do the same for HCCs
     for hcc in hcc_list:
         if hcc in coefficients:
-            coefficient_breakdown["hcc"][hcc] = {
-                "label": coefficient_labels["hcc"].get(hcc, "Unidentified HCC"),
-                "coefficient": coefficients[hcc],
-            }
+            coefficient_breakdown["hcc"].append(
+                {
+                    "code": hcc,
+                    "label": coefficient_labels["hcc"].get(hcc, "Unidentified HCC"),
+                    "coefficient": coefficients[hcc],
+                }
+            )
             key_list.append(hcc)
     # Now remove the hcc and interactions keys from the coefficients dict that are in the key_list, leaving only demographics
     # This is because the coefficients dict contains all coefficients, including demographics, interactions, and HCCs
@@ -215,16 +221,20 @@ def make_coefficient_breakdown(
     # Now add the demographics coefficients to the coefficient breakdown dict
     for key in coefficients.keys():
         if key in coefficient_labels["demographics"]:
-            coefficient_breakdown["demographics"][key] = {
-                "label": coefficient_labels["demographics"][key],
-                "coefficient": coefficients[key],
-            }
+            coefficient_breakdown["demographics"].append(
+                {
+                    "code": key,
+                    "label": coefficient_labels["demographics"].get(
+                        key, "Unidentified Demographic"
+                    ),
+                    "coefficient": coefficients[key],
+                }
+            )
 
     return coefficient_breakdown
 
 
-
-def format_response(raf_response):
+def format_response(raf_response: dict) -> dict:
     """Utility function: Strip out unnecessary fields from the calculate_raf() output, and insert the coefficient breakdown."""
     raf_response = sanitize_for_JSON(raf_response)
     return {
