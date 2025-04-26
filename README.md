@@ -14,7 +14,7 @@ The body of the request should contain a patient's age, sex, and diagnosis codes
 
 ````json
 {
-	"age": 1, // A non-negative number, 1 or greater
+    "age": 1, // A non-negative number, 1 or greater
     "sex": "F", // Can be 'M', 1, 'F', or 2
     "diagnosis_codes": [ // A list of ICD-10-CM codes, with or without the decimal point
         "E119",
@@ -110,7 +110,7 @@ The body of the request should contain a patient's age, sex, and diagnosis codes
 
 ## Authentication
 
-There is a simple authentication wrapper defined in *auth.py* which decorates the route in *main.py*. It anticipates a placeholder Bearer Token containing "your_secret_token". **It will be up to the users of this code to fully implement an authorization system fulfilling the security requirements of their application.**
+There is a simple authentication wrapper defined in *auth.py* which decorates the route in *main.py*. If environment variable ENFORCE_AUTH == true, we anticipate a placeholder Bearer Token containing "your_secret_token". **It will be up to the users of this code to fully implement an authorization system fulfilling the security requirements of their application.**
 
 #### Authorization Header
 
@@ -118,3 +118,5 @@ There is a simple authentication wrapper defined in *auth.py* which decorates th
 Authorization: Bearer your_secret_token
 ```
 
+## Note on HCCinFHIR
+This project is based on the HCCinFHIR package from mimilabs, which is the successor to a deprecated HCC calculating repository at github.com/yubin-park/hccpy. The author of bottled_hcc makes no promise that 1) he will follow the changes made to the HCC CMS model throughout its annual cycle of proposition, commentary, and finalization; or 2) he will follow the changes made to the HCCinFHIR package and continue to integrate future versions into this repo. Furthermore, there is no guarantee that the HCCinFHIR repo will continue to be maintained by mimilabs, although this appears to be a safe assumption in the near to mid term. **Use at your own risk, with the assumption that you may have to fork and do your own upkeep as CMS releases regular updates to its standards.**
