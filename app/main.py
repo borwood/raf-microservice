@@ -60,6 +60,7 @@ def sanitize_for_JSON(d):
     else:
         return d
 
+
 def only_required_fields(raf_response):
     """Utility function: Strip out unnecessary fields from the calculate_raf() output."""
     raf_response = sanitize_for_JSON(raf_response)
@@ -93,11 +94,3 @@ class CalculateRAF(Resource):
 
 if __name__ == "__main__":
     app.run(debug=True)
-    # print(
-    #     calculate_raf(
-    #         diagnosis_codes=["E119"],
-    #         model_name="CMS-HCC Model V28",
-    #         age=66,
-    #         sex="F",
-    #     )
-    # )
