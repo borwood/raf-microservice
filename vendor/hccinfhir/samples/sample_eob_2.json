@@ -1,0 +1,84 @@
+{
+  "resourceType": "ExplanationOfBenefit",
+  "type": {
+    "coding": [
+      {
+        "system": "https://bluebutton.cms.gov/resources/variables/nch_clm_type_cd",
+        "code": "40"
+      }
+    ]
+  },
+  "diagnosis": [
+    {
+      "sequence": 1,
+      "diagnosisCodeableConcept": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/sid/icd-10-cm",
+            "code": "E11.9"
+          }
+        ]
+      }
+    }
+  ],
+  "careTeam": [
+    {
+      "sequence": 1,
+      "provider": {
+        "identifier": {
+          "type": {
+            "coding": [
+              {
+                "code": "npi",
+                "display": "National Provider Identifier",
+                "system": "http://hl7.org/fhir/us/carin-bb/CodeSystem/C4BBIdentifierType"
+              }
+            ]
+          },
+          "value": "1234567890"
+        }
+      },
+      "qualification": {
+        "coding": [
+          {
+            "system": "https://bluebutton.cms.gov/resources/variables/prvdr_spclty",
+            "code": "01"
+          }
+        ]
+      },
+      "role": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/us/carin-bb/CodeSystem/C4BBClaimCareTeamRole",
+            "code": "performing"
+          }
+        ]
+      },
+      "responsible": true
+    }
+  ],
+  "billablePeriod": {
+    "start": "2023-01-01",
+    "end": "2023-01-01"
+  },
+  "item": [
+    {
+      "sequence": 1,
+      "productOrService": {
+        "coding": [
+          {
+            "system": "https://bluebutton.cms.gov/resources/codesystem/hcpcs",
+            "code": "99213"
+          }
+        ]
+      },
+      "diagnosisSequence": [
+        1
+      ],
+      "servicedPeriod": {
+        "start": "2023-01-01",
+        "end": "2023-01-01"
+      }
+    }
+  ]
+}

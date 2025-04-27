@@ -1,0 +1,136 @@
+{
+  "billablePeriod": {
+    "end": "2021-01-01",
+    "start": "2021-01-01"
+  },
+  "careTeam": [
+    {
+      "provider": {
+        "identifier": {
+          "type": {
+            "coding": [
+              {
+                "code": "npi",
+                "display": "National Provider Identifier",
+                "system": "http://hl7.org/fhir/us/carin-bb/CodeSystem/C4BBIdentifierType"
+              }
+            ]
+          },
+          "value": "1234567890"
+        }
+      },
+      "qualification": {
+        "coding": [
+          {
+            "code": "50",
+            "display": "Nurse practitioner",
+            "system": "https://bluebutton.cms.gov/resources/variables/prvdr_spclty"
+          }
+        ]
+      },
+      "responsible": true,
+      "role": {
+        "coding": [
+          {
+            "code": "performing",
+            "display": "Performing provider",
+            "system": "http://hl7.org/fhir/us/carin-bb/CodeSystem/C4BBClaimCareTeamRole"
+          }
+        ]
+      },
+      "sequence": 1
+    }
+  ],
+  "diagnosis": [
+    {
+      "diagnosisCodeableConcept": {
+        "coding": [
+          {
+            "code": "F411",
+            "display": "GENERALIZED ANXIETY DISORDER",
+            "system": "http://hl7.org/fhir/sid/icd-10-cm"
+          }
+        ]
+      },
+      "sequence": 1,
+      "type": [
+        {
+          "coding": [
+            {
+              "code": "principal",
+              "display": "principal",
+              "system": "http://terminology.hl7.org/CodeSystem/ex-diagnosistype"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "id": "carrier-28493431905",
+  "item": [
+    {
+      "diagnosisSequence": [
+        1
+      ],
+      "productOrService": {
+        "coding": [
+          {
+            "code": "90792",
+            "system": "https://bluebutton.cms.gov/resources/codesystem/hcpcs"
+          }
+        ]
+      },
+      "quantity": {
+        "value": 1
+      },
+      "sequence": 1,
+      "servicedPeriod": {
+        "end": "2021-01-01",
+        "start": "2021-01-01"
+      }
+    },
+    {
+      "diagnosisSequence": [
+        1
+      ],
+      "productOrService": {
+        "coding": [
+          {
+            "code": "99213",
+            "system": "https://bluebutton.cms.gov/resources/codesystem/hcpcs"
+          }
+        ]
+      },
+      "quantity": {
+        "value": 1
+      },
+      "sequence": 1,
+      "servicedPeriod": {
+        "end": "2021-01-01",
+        "start": "2021-01-01"
+      }
+    }
+  ],
+  "patient": {
+    "reference": "Patient/12345678"
+  },
+  "type": {
+    "coding": [
+      {
+        "code": "71",
+        "display": "Local carrier non-durable medical equipment, prosthetics, orthotics, and supplies (DMEPOS) claim",
+        "system": "https://bluebutton.cms.gov/resources/variables/nch_clm_type_cd"
+      },
+      {
+        "code": "CARRIER",
+        "system": "https://bluebutton.cms.gov/resources/codesystem/eob-type"
+      },
+      {
+        "code": "professional",
+        "display": "Professional",
+        "system": "http://terminology.hl7.org/CodeSystem/claim-type"
+      }
+    ]
+  },
+  "resourceType": "ExplanationOfBenefit"
+}

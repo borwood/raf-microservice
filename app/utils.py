@@ -1,6 +1,9 @@
 from pydantic import BaseModel
+from vendor.hccinfhir.model_calculate import calculate_raf
 
 # This file contains utilities for cleaning up the output of calculate_raf() so it can be returned as a useful JSON response.
+
+NORM_FACTOR = 1.045  # This is the 2025 normalization factor for the CMS-HCC V28 model. It is used to normalize the risk score to a 1.0 scale.
 
 # This is a map of all of the possible coefficient keys that can be returned from the calculate_raf() function for CMS HCC V28.
 # It is used to map the keys to human readable labels for the API response.
@@ -97,7 +100,7 @@ coefficient_labels = {
         "223": "Heart Failure with Heart Assist Device/Artificial Heart",
         "224": "Acute on Chronic Heart Failure",
         "225": "Acute Heart Failure (Excludes Acute on Chronic)",
-        "226": "Heart Failure, Except EndStage and Acu",
+        "226": "Heart Failure, Except Endstage and Acute",
         "227": "Cardiomyopathy/Myocarditis",
         "228": "Acute Myocardial Infarction",
         "229": "Unstable Angina and Other Acute Ischemic Heart Disease",
@@ -183,7 +186,7 @@ def sanitize_for_JSON(d: dict) -> dict:
 
 
 def make_coefficient_breakdown(
-    interactions: dict, coefficients: dict, hcc_list: list
+    interactions: dict, coefficients: dict, hcc_list: list, cc_to_dx: dict
 ) -> dict:
     """Utility function: Make dict of coefficients separated by type, with human readable labels."""
     coefficient_breakdown = {"interactions": [], "hcc": [], "demographics": []}
@@ -208,6 +211,7 @@ def make_coefficient_breakdown(
             coefficient_breakdown["hcc"].append(
                 {
                     "code": hcc,
+                    "dx": cc_to_dx.get(hcc, "Unidentified Diagnosis Code"),
                     "label": coefficient_labels["hcc"].get(hcc, "Unidentified HCC"),
                     "coefficient": coefficients[hcc],
                 }
@@ -238,11 +242,37 @@ def format_response(raf_response: dict) -> dict:
     """Utility function: Strip out unnecessary fields from the calculate_raf() output, and insert the coefficient breakdown."""
     raf_response = sanitize_for_JSON(raf_response)
     return {
-        "risk_score": raf_response["risk_score"],
-        "risk_score_normalized": round(raf_response["risk_score"] / 1.015, 3),
+        "risk_score": round(raf_response["risk_score"], 3),
+        "risk_score_normalized": round(raf_response["risk_score"] / NORM_FACTOR, 3),
         **make_coefficient_breakdown(
-            raf_response["interactions"],
-            raf_response["coefficients"],
-            raf_response["hcc_list"],
+            interactions=raf_response["interactions"],
+            coefficients=raf_response["coefficients"],
+            hcc_list=raf_response["hcc_list"],
+            cc_to_dx=raf_response["cc_to_dx"],
         ),
     }
+
+
+def get_v28_response(
+    diagnosis_codes: list,
+    age: int,
+    sex: str,
+    dual_elgbl_cd: str = None,
+    orec: str = None,
+    crec: str = None,
+    new_enrollee: bool = False,
+    snp: bool = False,
+) -> dict:
+    """Get the V28 RAF response from calculate_raf() and apply formatting."""
+    raw_response = calculate_raf(
+        diagnosis_codes=diagnosis_codes,
+        model_name="CMS-HCC Model V28",
+        age=age,
+        sex=sex,
+        dual_elgbl_cd=dual_elgbl_cd,
+        orec=orec,
+        crec=crec,
+        new_enrollee=new_enrollee,
+        snp=snp,
+    )
+    return format_response(raw_response)
