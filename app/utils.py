@@ -25,6 +25,8 @@ coefficient_labels = {
         "D8": "Eight payable HCCs",
         "D9": "Nine payable HCCs",
         "D10P": "Ten or more payable HCCs",
+        "OriginallyDisabled_Male": "Originally Disabled Male",
+        "OriginallyDisabled_Female": "Originally Disabled Female",
     },
     "hcc": {
         "1": "HIV/AIDS",
@@ -146,7 +148,8 @@ coefficient_labels = {
         "F0_34": "Female, Age 0-34",
         "F35_44": "Female, Age 35-44",
         "F45_54": "Female, Age 45-54",
-        "F55_64": "Female, Age 55-64",
+        "F55_59": "Female, Age 55-59",
+        "F60_64": "Femaile, Age 60-64",
         "F65_69": "Female, Age 65-69",
         "F70_74": "Female, Age 70-74",
         "F75_79": "Female, Age 75-79",
@@ -157,7 +160,8 @@ coefficient_labels = {
         "M0_34": "Male, Age 0-34",
         "M35_44": "Male, Age 35-44",
         "M45_54": "Male, Age 45-54",
-        "M55_64": "Male, Age 55-64",
+        "M55_59": "Male, Age 55-59",
+        "M60_64": "Male, Age 60-64",
         "M65_69": "Male, Age 65-69",
         "M70_74": "Male, Age 70-74",
         "M75_79": "Male, Age 75-79",
@@ -224,15 +228,14 @@ def make_coefficient_breakdown(
             del coefficients[key]
     # Now add the demographics coefficients to the coefficient breakdown dict
     for key in coefficients.keys():
-        if key in coefficient_labels["demographics"]:
-            coefficient_breakdown["demographics"].append(
-                {
-                    "code": key,
-                    "label": coefficient_labels["demographics"].get(
-                        key, "Unidentified Demographic"
-                    ),
-                    "coefficient": coefficients[key],
-                }
+        coefficient_breakdown["demographics"].append(
+            {
+                "code": key,
+                "label": coefficient_labels["demographics"].get(
+                    key, "Unidentified Demographic"
+                ),
+                "coefficient": coefficients[key],
+            }
             )
 
     return coefficient_breakdown
