@@ -3,7 +3,7 @@ from vendor.hccinfhir.model_calculate import calculate_raf
 
 # This file contains utilities for cleaning up the output of calculate_raf() so it can be returned as a useful JSON response.
 
-NORM_FACTOR = 1.045  # This is the 2025 normalization factor for the CMS-HCC V28 model. It is used to normalize the risk score to a 1.0 scale.
+NORM_FACTOR = 1.045  # This is the 2025 normalization factor for the CMS-HCC V28 model. It is defined yearly, and compensates for increase in dx capture over time, making 2025 scores comparable to 2024 and earlier.
 
 # This is a map of all of the possible coefficient keys that can be returned from the calculate_raf() function for CMS HCC V28.
 # It is used to map the keys to human readable labels for the API response.
@@ -13,7 +13,7 @@ coefficient_labels = {
         "HF_CHR_LUNG_V28": "Heart Failure with Chronic Lung Disease",
         "HF_KIDNEY_V28": "Heart Failure with Chronic Kidney Disease",
         "CHR_LUNG_CARD_RESP_FAIL_V28": "Chronic Lung Disease with Cardiac or Respiratory Failure",
-        "HF_HCC238_V28": "Heart Failure with HCC238",  # THIS IS NOT IMPLEMENTED IN HCCINFHIR YET - I'll make a PR
+        "HF_HCC238_V28": "Heart Failure with HCC238",  # THIS IS NOT ENABLED IN HCCINFHIR YET - PR made - Currently vendoring custom fork with fix
         "gSubUseDisorder_gPsych_V28": "Substance Use Disorder with Psychosis",
         "D1": "One payable HCC",
         "D2": "Two payable HCCs",
@@ -149,7 +149,7 @@ coefficient_labels = {
         "F35_44": "Female, Age 35-44",
         "F45_54": "Female, Age 45-54",
         "F55_59": "Female, Age 55-59",
-        "F60_64": "Femaile, Age 60-64",
+        "F60_64": "Female, Age 60-64",
         "F65_69": "Female, Age 65-69",
         "F70_74": "Female, Age 70-74",
         "F75_79": "Female, Age 75-79",
@@ -174,7 +174,7 @@ coefficient_labels = {
 
 
 def sanitize_for_JSON(d: dict) -> dict:
-    """Utility function: Recursively convert all sets in a dict to lists and process BaseModel objects as dict."""
+    """Utility function: Recursively convert dict values to JSON-serializable formats."""
     if issubclass(type(d), dict):
         return {
             k: sanitize_for_JSON(v) for k, v in d.items()
