@@ -244,9 +244,20 @@ def make_coefficient_breakdown(
 def format_response(raf_response: dict) -> dict:
     """Utility function: Strip out unnecessary fields from the calculate_raf() output, and insert the coefficient breakdown."""
     raf_response = sanitize_for_JSON(raf_response)
+    com_dual_prefix = (
+        " PBDual," if raf_response["demographics"]["pbd"] else
+        " FBDual," if raf_response["demographics"]["fbd"] else
+        " NonDual,"
+    )
+    com_disabled_suffix = (
+        " Disabled" if raf_response["demographics"]["disabled"] else
+        " Aged"
+    )
+    community = "Community," + com_dual_prefix + com_disabled_suffix
     return {
         "risk_score": round(raf_response["risk_score"], 3),
         "risk_score_normalized": round(raf_response["risk_score"] / NORM_FACTOR, 3),
+        "community": community,
         **make_coefficient_breakdown(
             interactions=raf_response["interactions"],
             coefficients=raf_response["coefficients"],
@@ -267,6 +278,13 @@ def get_v28_response(
     snp: bool = False,
 ) -> dict:
     """Get the V28 RAF response from calculate_raf() and apply formatting."""
+    match dual_elgbl_cd:
+        case "FBDual": # Medicare with full benefit from Medicaid
+            dual_elgbl_cd = "02"
+        case "PBDual": # Medicare with partial benefit from Medicaid
+            dual_elgbl_cd = "01"
+        case "NonDual": # Medicare only
+            dual_elgbl_cd = None
     raw_response = calculate_raf(
         diagnosis_codes=diagnosis_codes,
         model_name="CMS-HCC Model V28",

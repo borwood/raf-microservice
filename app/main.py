@@ -58,7 +58,9 @@ raf_model = api.model(
                 "08",
                 "09",
                 "10",
-                "",
+                "PBDual",
+                "FBDual",
+                "NonDual"
             ],
             description="Dual eligibility code for this month: 01 - 10. Default is 02 which is a 'full dual' code, this code can be retrieved from service level data in the FHIR resource EOB. \n\nDual codes: https://resdac.org/cms-data/variables/medicare-medicaid-dual-eligibility-code-january \n\nFHIR EOB: https://build.fhir.org/explanationofbenefit.html",
         ),
