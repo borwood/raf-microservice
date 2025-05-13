@@ -65,23 +65,25 @@ raf_model = api.model(
             description="Dual eligibility code for this month: 01 - 10. Default is 02 which is a 'full dual' code, this code can be retrieved from service level data in the FHIR resource EOB. \n\nDual codes: https://resdac.org/cms-data/variables/medicare-medicaid-dual-eligibility-code-january \n\nFHIR EOB: https://build.fhir.org/explanationofbenefit.html",
         ),
         "orec": fields.String(
-            default="0",
+            default="",
             enum=[
                 "0",
                 "1",
                 "2",
                 "3",
+                ""
             ],
             description="Original reason for entitlement code: 0 - 3. Default is 0 which is 'age'. \n\nOREC codes: https://resdac.org/cms-data/variables/medicare-original-reason-entitlement-code-orec",
         ),
         "crec": fields.String(
-            default="0",
+            default="",
             enum=[
                 "0",
                 "1",
                 "2",
                 "3",
                 "4",
+                ""
             ],
             description="Current reason for entitlement code: 0 - 4. Default is 0 which is 'age'. \n\nCREC codes: https://resdac.org/cms-data/variables/current-reason-entitlement-code",
         ),
