@@ -190,26 +190,13 @@ def sanitize_for_JSON(d: dict) -> dict:
 
 
 def make_coefficient_breakdown(
-    interactions: dict, coefficients: dict, hcc_list: list, cc_to_dx: dict
+    interactions: dict, coefficients: dict, hcc_list: list, cc_to_dx: dict, single: bool = False
 ) -> dict:
     """Utility function: Make dict of coefficients separated by type, with human readable labels."""
-    coefficient_breakdown = {"interactions": [], "hcc": [], "demographics": []}
+    coefficient_breakdown = {"interactions": [], "hcc": [], "demographics": []} if not single else {"hcc":[]}
     key_list = []
-    # For each interaction that is flagged as present (1), add it to the coefficient breakdown dict
-    for key, value in interactions.items():
-        if value == 1:
-            if key in coefficients:
-                coefficient_breakdown["interactions"].append(
-                    {
-                        "code": key,
-                        "label": coefficient_labels["interactions"].get(
-                            key, "Unidentified Interaction"
-                        ),
-                        "coefficient": coefficients[key],
-                    }
-                )
-                key_list.append(key)
-    # Now do the same for HCCs
+    
+    # For each HCC present, add it to coefficient_breakdown
     for hcc in hcc_list:
         if hcc in coefficients:
             coefficient_breakdown["hcc"].append(
@@ -221,27 +208,43 @@ def make_coefficient_breakdown(
                 }
             )
             key_list.append(hcc)
+    
+    if single==False: # If doing a single dx we don't return this stuff
+        # For each interaction that is flagged as present (1), add it to the coefficient breakdown dict
+        for key, value in interactions.items():
+            if value == 1:
+                if key in coefficients:
+                    coefficient_breakdown["interactions"].append(
+                        {
+                            "code": key,
+                            "label": coefficient_labels["interactions"].get(
+                                key, "Unidentified Interaction"
+                            ),
+                            "coefficient": coefficients[key],
+                        }
+                    )
+                    key_list.append(key)
     # Now remove the hcc and interactions keys from the coefficients dict that are in the key_list, leaving only demographics
     # This is because the coefficients dict contains all coefficients, including demographics, interactions, and HCCs
-    for key in key_list:
-        if key in coefficients:
-            del coefficients[key]
+        for key in key_list:
+            if key in coefficients:
+                del coefficients[key]
     # Now add the demographics coefficients to the coefficient breakdown dict
-    for key in coefficients.keys():
-        coefficient_breakdown["demographics"].append(
-            {
-                "code": key,
-                "label": coefficient_labels["demographics"].get(
-                    key, "Unidentified Demographic"
-                ),
-                "coefficient": coefficients[key],
-            }
+        for key in coefficients.keys():
+            coefficient_breakdown["demographics"].append(
+                {
+                    "code": key,
+                    "label": coefficient_labels["demographics"].get(
+                        key, "Unidentified Demographic"
+                    ),
+                    "coefficient": coefficients[key],
+                }
             )
 
     return coefficient_breakdown
 
 
-def format_response(raf_response: dict) -> dict:
+def format_multi_response(raf_response: dict) -> dict:
     """Utility function: Strip out unnecessary fields from the calculate_raf() output, and insert the coefficient breakdown."""
     raf_response = sanitize_for_JSON(raf_response)
     com_dual_prefix = (
@@ -249,11 +252,11 @@ def format_response(raf_response: dict) -> dict:
         " FBDual," if raf_response["demographics"]["fbd"] else
         " NonDual,"
     )
-    com_disabled_suffix = (
+    com_suffix = (
         " Disabled" if raf_response["demographics"]["disabled"] else
         " Aged"
     )
-    community = "Community," + com_dual_prefix + com_disabled_suffix
+    community = "Community," + com_dual_prefix + com_suffix
     return {
         "risk_score": round(raf_response["risk_score"], 3),
         "risk_score_normalized": round(raf_response["risk_score"] / NORM_FACTOR, 3),
@@ -266,8 +269,32 @@ def format_response(raf_response: dict) -> dict:
         ),
     }
 
+def format_single_response(raf_response: dict) -> dict:
+    """Utility function: Strip out unnecessary fields from the calculate_raf() output, and insert the coefficient breakdown."""
+    raf_response = sanitize_for_JSON(raf_response)
+    com_dual_prefix = (
+        " Partial Benefit Dual-Enrolled," if raf_response["demographics"]["pbd"] else
+        " Full Benefit Dual-Enrolled," if raf_response["demographics"]["fbd"] else
+        " Not Dual-Enrolled,"
+    )
+    com_suffix = (
+        " Disabled" if raf_response["demographics"]["disabled"] else
+        " Aged 65+"
+    )
+    community = "Community," + com_dual_prefix + com_suffix
+    return {
+        "community": community,
+        **make_coefficient_breakdown(
+            interactions=raf_response["interactions"],
+            coefficients=raf_response["coefficients"],
+            hcc_list=raf_response["hcc_list"],
+            cc_to_dx=raf_response["cc_to_dx"],
+            single=True
+        ),
+    }
 
-def get_v28_response(
+
+def get_multi_response_v28(
     diagnosis_codes: list,
     age: int,
     sex: str,
@@ -296,4 +323,35 @@ def get_v28_response(
         new_enrollee=new_enrollee,
         snp=snp,
     )
-    return format_response(raw_response)
+    return format_multi_response(raw_response)
+
+def get_single_response_v28(
+    diagnosis_code: str,
+    age: int,
+    sex: str,
+    dual_elgbl_cd: str = None,
+    orec: str = None,
+    crec: str = None,
+    new_enrollee: bool = False,
+    snp: bool = False,
+) -> dict:
+    """Get the V28 RAF response from calculate_raf() and apply formatting."""
+    match dual_elgbl_cd:
+        case "FBDual": # Medicare with full benefit from Medicaid
+            dual_elgbl_cd = "02"
+        case "PBDual": # Medicare with partial benefit from Medicaid
+            dual_elgbl_cd = "01"
+        case "NonDual": # Medicare only
+            dual_elgbl_cd = None
+    raw_response = calculate_raf(
+        diagnosis_codes=[diagnosis_code],
+        model_name="CMS-HCC Model V28",
+        age=age,
+        sex=sex,
+        dual_elgbl_cd=dual_elgbl_cd,
+        orec=orec,
+        crec=crec,
+        new_enrollee=new_enrollee,
+        snp=snp,
+    )
+    return format_single_response(raw_response)
