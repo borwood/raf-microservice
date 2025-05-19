@@ -176,7 +176,7 @@ single_raf_model = api.model(
 
 # Defining calculate-raf-v28 route with POST method
 # CMS-HCC Model V28 is the latest version of the CMS-HCC risk adjustment model. CMS defines annual updates to the model and will eventually deprecate this version.
-@ns_v1.route("/multi-dx-raf-v28")
+@ns_v1.route("/raf-v28/multi")
 class CalculateRAF(Resource):
     @api.expect(multi_raf_model)
     @require_auth
@@ -189,7 +189,7 @@ class CalculateRAF(Resource):
         except Exception as e:
             return {"error": str(e)}, 400
         
-@ns_v1.route("/single-dx-raf-v28")
+@ns_v1.route("/raf-v28/single")
 class CalculateRAF(Resource):
     @api.expect(single_raf_model)
     @require_auth
