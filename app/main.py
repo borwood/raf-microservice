@@ -3,9 +3,9 @@ from flask import Flask
 from flask_restx import Api, Resource, fields
 from app.auth import require_auth
 from app.utils import get_multi_response_v28, get_single_response_v28
-
+from flask_cors import CORS
 app = Flask(__name__)
-
+CORS(app, origins="*")  # Enable CORS for all domains
 
 # Initialize Flask-RESTPlus API
 api = Api(
@@ -20,7 +20,7 @@ ns_v1 = api.namespace(
 )
 api.add_namespace(ns_v1, path="/v1")
 
-# Defining request schema
+# Defining request schema (this implements Pydantic model)
 multi_raf_model = api.model(
     "MultiRAFRequest",
     {
@@ -177,7 +177,7 @@ single_raf_model = api.model(
 # Defining calculate-raf-v28 route with POST method
 # CMS-HCC Model V28 is the latest version of the CMS-HCC risk adjustment model. CMS defines annual updates to the model and will eventually deprecate this version.
 @ns_v1.route("/raf-v28/multi")
-class CalculateRAF(Resource):
+class CalculateRAFMulti(Resource):
     @api.expect(multi_raf_model)
     @require_auth
     def post(self):
@@ -190,7 +190,7 @@ class CalculateRAF(Resource):
             return {"error": str(e)}, 400
         
 @ns_v1.route("/raf-v28/single")
-class CalculateRAF(Resource):
+class CalculateRAFSingle(Resource):
     @api.expect(single_raf_model)
     @require_auth
     def post(self):

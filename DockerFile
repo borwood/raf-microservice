@@ -17,12 +17,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the app
 COPY . .
 
-# Expose port for Flask (default: 5000)
-EXPOSE 5000
+# Expose port for Flask (80 for AWS fargate test)
+EXPOSE 80
 
 # Set environment variables (optional: for Flask run)
 ENV FLASK_APP=app.main
 ENV FLASK_RUN_HOST=0.0.0.0
 
 # Start the Flask server
-CMD ["flask", "run"]
+CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:80", "app.main:app"]

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from vendor.hccinfhir.model_calculate import calculate_raf
+from vendor.hccinfhir.model_calculate import calculate_raf, RAFResult
 
 # This file contains utilities for cleaning up the output of calculate_raf() so it can be returned as a useful JSON response.
 
@@ -298,9 +298,9 @@ def get_multi_response_v28(
     diagnosis_codes: list,
     age: int,
     sex: str,
-    dual_elgbl_cd: str = None,
-    orec: str = None,
-    crec: str = None,
+    dual_elgbl_cd: str|None = None,
+    orec: str|None = None,
+    crec: str|None = None,
     new_enrollee: bool = False,
     snp: bool = False,
 ) -> dict:
@@ -329,9 +329,9 @@ def get_single_response_v28(
     diagnosis_code: str,
     age: int,
     sex: str,
-    dual_elgbl_cd: str = None,
-    orec: str = None,
-    crec: str = None,
+    dual_elgbl_cd: str|None = None,
+    orec: str|None = None,
+    crec: str|None = None,
     new_enrollee: bool = False,
     snp: bool = False,
 ) -> dict:
