@@ -5,7 +5,7 @@ from app.auth import require_auth
 from app.utils import get_multi_response_v28, get_single_response_v28
 from flask_cors import CORS
 app = Flask(__name__)
-CORS(app, origins="*")  # Enable CORS for all domains
+CORS(app, origins="*", methods="*")  # Enable CORS for all domains
 
 # Initialize Flask-RESTPlus API
 api = Api(
@@ -183,6 +183,7 @@ class CalculateRAFMulti(Resource):
     def post(self):
         """Calculate RAF using the provided diagnosis codes, age, and sex."""
         data = api.payload
+        print("Received data:", data)  # Debugging line to check incoming data
         try:
             response = get_multi_response_v28(**data)
             return response, 200
@@ -196,6 +197,8 @@ class CalculateRAFSingle(Resource):
     def post(self):
         """Calculate the RAF coefficient of a single diagnosis, with the ICD-10, age, and sex."""
         data = api.payload
+        print("Received data:", data)  # Debugging line to check incoming data
+
         try:
             response = get_single_response_v28(**data)
             return response, 200
