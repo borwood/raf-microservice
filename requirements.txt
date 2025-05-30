@@ -1,26 +1,7 @@
-aniso8601==10.0.1
-annotated-types==0.7.0
-attrs==25.3.0
-blinker==1.9.0
-click==8.1.8
-colorama==0.4.6
 Flask==3.1.0
 flask-cors==6.0.0
 flask-restx==1.3.0
 gunicorn==23.0.0
-importlib_resources==6.5.2
-itsdangerous==2.2.0
-Jinja2==3.1.6
-jsonschema==4.23.0
-jsonschema-specifications==2024.10.1
-MarkupSafe==3.0.2
-packaging==25.0
 pydantic==2.11.3
 pydantic_core==2.33.1
-pytz==2025.2
-PyYAML==6.0.2
-referencing==0.36.2
-rpds-py==0.24.0
-typing-inspection==0.4.0
-typing_extensions==4.13.2
-Werkzeug==3.1.3
+# hccinfhir==0.1.0 # Uncomment if they patch the lib, and we stop vendoring it

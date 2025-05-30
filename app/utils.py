@@ -40,7 +40,8 @@ coefficient_labels = {
         "22": "Bladder, Colorectal, and Other Cancers",
         "23": "Prostate, Breasts, and Other Cancers",
         "35": "Pancrase Transplant Status",
-        "37": "Diabetes with Severe Acute Complications",
+        "36": "Diabetes with Severe Acute Complications",
+        "37": "Diabetes with Chronic Complications",
         "38": "Diabetes with Glycemic, Unspecified, or No Complications",
         "48": "Morbid Obesity",
         "49": "Specified Lysosoml Storage Disease",
@@ -169,6 +170,10 @@ coefficient_labels = {
         "M85_89": "Male, Age 85-89",
         "M90_94": "Male, Age 90-94",
         "M95_GT": "Male, Age 95+",
+        "new_enrollee": "New Enrollee",
+        "orig_disabled": "Original Reason of Eligibility: Disabled",
+        "disabled": "Disabled",
+        "ESRD": "End Stage Renal Disease",
     },
 }
 
@@ -184,17 +189,16 @@ def sanitize_for_JSON(d: dict) -> dict:
             k: sanitize_for_JSON(v) for k, v in d.model_dump().items()
         }  # Convert Pydantic model to dict
     elif issubclass(type(d), set):
-        return list(d)
+        return list(d) # Angry linter
     else:
         return d
 
 
 def make_coefficient_breakdown(
-    interactions: dict, coefficients: dict, hcc_list: list, cc_to_dx: dict, single: bool = False
+    demographics: dict, interactions: dict, coefficients: dict, hcc_list: list, cc_to_dx: dict, single: bool = False
 ) -> dict:
     """Utility function: Make dict of coefficients separated by type, with human readable labels."""
     coefficient_breakdown = {"interactions": [], "hcc": [], "demographics": []} if not single else {"hcc":[]}
-    key_list = []
     
     # For each HCC present, add it to coefficient_breakdown
     for hcc in hcc_list:
@@ -207,7 +211,7 @@ def make_coefficient_breakdown(
                     "coefficient": coefficients[hcc],
                 }
             )
-            key_list.append(hcc)
+            
     
     if single==False: # If doing a single dx we don't return this stuff
         # For each interaction that is flagged as present (1), add it to the coefficient breakdown dict
@@ -223,69 +227,91 @@ def make_coefficient_breakdown(
                             "coefficient": coefficients[key],
                         }
                     )
-                    key_list.append(key)
-    # Now remove the hcc and interactions keys from the coefficients dict that are in the key_list, leaving only demographics
-    # This is because the coefficients dict contains all coefficients, including demographics, interactions, and HCCs
-        for key in key_list:
-            if key in coefficients:
-                del coefficients[key]
-    # Now add the demographics coefficients to the coefficient breakdown dict
-        for key in coefficients.keys():
-            coefficient_breakdown["demographics"].append(
-                {
-                    "code": key,
-                    "label": coefficient_labels["demographics"].get(
-                        key, "Unidentified Demographic"
-                    ),
-                    "coefficient": coefficients[key],
-                }
-            )
-
+                    
+    # Generate a label for the demographics information
+    demo_label = []
+    for key, value in demographics['data'].items():
+        if value:
+            if type(value) is bool and coefficient_labels["demographics"].get(key):
+                demo_label.append(str(coefficient_labels["demographics"].get(key))) # Not adding anything not in our list of known demo codes
+            elif type(value) is str and coefficient_labels["demographics"].get(value):
+                demo_label.append(str(coefficient_labels["demographics"].get(value))) # Not adding anything not in our list of known demo codes
+    coefficient_breakdown["demographics"] = [{
+        'code': demographics["data"]["category"],
+        'label': ", ".join(demo_label),
+        'coefficient': demographics["coefficient"]
+    }]
     return coefficient_breakdown
 
 
 def format_multi_response(raf_response: dict) -> dict:
-    """Utility function: Strip out unnecessary fields from the calculate_raf() output, and insert the coefficient breakdown."""
+    """Format response for downstream UI consumption."""
     raf_response = sanitize_for_JSON(raf_response)
-    com_dual_prefix = (
-        " PBDual," if raf_response["demographics"]["pbd"] else
-        " FBDual," if raf_response["demographics"]["fbd"] else
-        " NonDual,"
-    )
-    com_suffix = (
-        " Disabled" if raf_response["demographics"]["disabled"] else
-        " Aged"
-    )
-    community = "Community," + com_dual_prefix + com_suffix
+    demo = raf_response["demographics"]
+
+    if demo.get("new_enrollee"):
+        community = "New Enrollee"
+    else:
+        com_dual_prefix = (
+            " PBDual," if demo["pbd"] else
+            " FBDual," if demo["fbd"] else
+            " NonDual,"
+        )
+        com_suffix = " Disabled" if demo["disabled"] else " Aged"
+        community = "Community," + com_dual_prefix + com_suffix
+
+    def is_model_code(label: str) -> bool:
+        return "MCAID_" in label or "NMCAID_" in label or "FBDual_" in label
+
+    filtered_interactions = {
+        key: value
+        for key, value in raf_response["interactions"].items()
+        if value != 0 and not is_model_code(key)
+    }
+
     return {
         "risk_score": round(raf_response["risk_score"], 3),
         "risk_score_normalized": round(raf_response["risk_score"] / NORM_FACTOR, 3),
         "community": community,
         **make_coefficient_breakdown(
-            interactions=raf_response["interactions"],
+            demographics={'data': raf_response["demographics"],'coefficient': raf_response['risk_score_demographics']},
+            interactions=filtered_interactions,
             coefficients=raf_response["coefficients"],
             hcc_list=raf_response["hcc_list"],
             cc_to_dx=raf_response["cc_to_dx"],
         ),
     }
 
+
 def format_single_response(raf_response: dict) -> dict:
     """Utility function: Strip out unnecessary fields from the calculate_raf() output, and insert the coefficient breakdown."""
     raf_response = sanitize_for_JSON(raf_response)
-    com_dual_prefix = (
-        " Partial Benefit Dual-Enrolled," if raf_response["demographics"]["pbd"] else
-        " Full Benefit Dual-Enrolled," if raf_response["demographics"]["fbd"] else
-        " Not Dual-Enrolled,"
-    )
-    com_suffix = (
-        " Disabled" if raf_response["demographics"]["disabled"] else
-        " Aged 65+"
-    )
-    community = "Community," + com_dual_prefix + com_suffix
+    demo = raf_response["demographics"]
+
+    if demo.get("new_enrollee"):
+        community = "New Enrollee"
+    else:
+        com_dual_prefix = (
+            " PBDual," if demo["pbd"] else
+            " FBDual," if demo["fbd"] else
+            " NonDual,"
+        )
+        com_suffix = " Disabled" if demo["disabled"] else " Aged"
+        community = "Community," + com_dual_prefix + com_suffix
+
+    def is_model_code(label: str) -> bool:
+        return "MCAID_" in label or "NMCAID_" in label or "FBDual_" in label
+
+    filtered_interactions = {
+        key: value
+        for key, value in raf_response["interactions"].items()
+        if value != 0 and not is_model_code(key)
+    }
     return {
         "community": community,
         **make_coefficient_breakdown(
-            interactions=raf_response["interactions"],
+            demographics={'data': raf_response["demographics"],'coefficient': raf_response['risk_score_demographics']},
+            interactions=filtered_interactions,
             coefficients=raf_response["coefficients"],
             hcc_list=raf_response["hcc_list"],
             cc_to_dx=raf_response["cc_to_dx"],
@@ -323,6 +349,7 @@ def get_multi_response_v28(
         new_enrollee=new_enrollee,
         snp=snp,
     )
+    print(raw_response)
     return format_multi_response(raw_response)
 
 def get_single_response_v28(
