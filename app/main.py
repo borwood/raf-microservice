@@ -5,7 +5,7 @@ from app.auth import require_auth
 from app.utils import get_multi_response_v28, get_single_response_v28
 from flask_cors import CORS
 app = Flask(__name__)
-CORS(app, origins="*", methods="*")  # Enable CORS for all domains
+CORS(app, resources={r"/v1/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
 
 # Initialize Flask-RESTPlus API
 api = Api(
