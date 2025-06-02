@@ -25,4 +25,4 @@ ENV FLASK_APP=app.main
 ENV FLASK_RUN_HOST=0.0.0.0
 
 # Start the Flask/gunicorn server
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:80", "app.main:app"]
+CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "app.main:app"]
